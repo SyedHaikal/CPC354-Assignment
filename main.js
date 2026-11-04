@@ -6,8 +6,8 @@ if (!gl) {
     alert("WebGL not supported in this browser.");
 }
 
-//Define the 2D vertices for the letter "T" and "V"
-const verticesTV = new Float32Array([
+//Define the 2D vertices for the word "LAG"
+const vertices = new Float32Array([
     // --- LETTER "L" ---
     -0.95,0.5,   -0.95,-0.4,  -0.8,0.4,
     -0.8,-0.5,  -0.95,-0.4,  -0.8,0.4,
@@ -37,23 +37,34 @@ const verticesTV = new Float32Array([
     0.95,-0.5, 0.95,-0.35, 0.55,-0.5
 ]);
 
-//Load 2D Position Data directly into the GPU
+const geometry3D = extrude2D(vertices, 0.2);
+
+//Load Position Data directly into the GPU
 const positionBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-gl.bufferData(gl.ARRAY_BUFFER, verticesTV, gl.STATIC_DRAW);
+gl.bufferData(gl.ARRAY_BUFFER, geometry3D.positions, gl.STATIC_DRAW);
+
+const colorBuffer = gl.createBuffer();
+gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+gl.bufferData(gl.ARRAY_BUFFER, geometry3D.colors, gl.STATIC_DRAW);
 
 //Shaders
 const vsSource = `
-    attribute vec2 a_position;
+    attribute vec4 a_position;
+    attribute vec4 a_color;
+    uniform mat4 u_matrix;
+    varying vec4 v_color;
+    
     void main() {
-        // Hardcode Z to 0.0 and W to 1.0 for a flat 2D view
-        gl_Position = vec4(a_position, 0.0, 1.0);
+        gl_Position = u_matrix * a_position;
+        v_color = a_color; // Pass the color to the fragment shader
     }
 `;
 const fsSource = `
+    precision mediump float;
+    varying vec4 v_color;
     void main() {
-        // Render the shape in solid Cyan
-        gl_FragColor = vec4(0.0, 0.8, 1.0, 1.0); 
+        gl_FragColor = v_color; 
     }
 `;
 
@@ -70,16 +81,49 @@ gl.attachShader(program, createShader(gl, gl.FRAGMENT_SHADER, fsSource));
 gl.linkProgram(program);
 gl.useProgram(program);
 
-//Bind Attributes
 const positionLocation = gl.getAttribLocation(program, "a_position");
 gl.enableVertexAttribArray(positionLocation);
 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-//Instruct WebGL to pull 2 coordinates (X, Y) per vertex
-gl.vertexAttribPointer(positionLocation, 2, gl.FLOAT, false, 0, 0);
+// Instruct WebGL to pull 3 coordinates (X, Y, Z) per vertex
+gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
 
-//Draw the Static 2D Scene
-gl.clearColor(0.0, 0.0, 0.0, 1.0);
-gl.clear(gl.COLOR_BUFFER_BIT);
+const colorLocation = gl.getAttribLocation(program, "a_color");
+gl.enableVertexAttribArray(colorLocation);
+gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+// Instruct WebGL to pull 4 coordinates (R, G, B, A) per vertex
+gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
 
-const vertexCount = verticesTV.length / 2; // Divide by 2 because we have X and Y
-gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+const matrixLocation = gl.getUniformLocation(program, "u_matrix");
+
+// 7. Enable Depth Testing so front faces hide back faces
+gl.enable(gl.DEPTH_TEST);
+
+// 8. Continuous Animation Loop 
+let currentAngle = 0;
+
+function drawScene() {
+    currentAngle += 0.01; 
+    
+    const cos = Math.cos(currentAngle);
+    const sin = Math.sin(currentAngle);
+    
+    // Y-Axis Rotation Matrix
+    const rotationMatrix = new Float32Array([
+         cos,  0.0,  sin,  0.0,
+         0.0,  1.0,  0.0,  0.0,
+        -sin,  0.0,  cos,  0.0,
+         0.0,  0.0,  0.0,  1.0
+    ]);
+
+    gl.uniformMatrix4fv(matrixLocation, false, rotationMatrix);
+
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    const vertexCount = geometry3D.positions.length / 3;
+    gl.drawArrays(gl.TRIANGLES, 0, vertexCount);
+    
+    requestAnimationFrame(drawScene); 
+}
+
+drawScene();
