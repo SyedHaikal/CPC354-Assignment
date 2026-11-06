@@ -1,52 +1,85 @@
-// extrusion.js
+function hexToRgb(hex) {
+    const value = hex.replace("#", "");
+    return [
+        parseInt(value.slice(0, 2), 16) / 255,
+        parseInt(value.slice(2, 4), 16) / 255,
+        parseInt(value.slice(4, 6), 16) / 255
+    ];
+}
 
-function extrude2D(vertices2D, depth) {
-    // Negative Z brings the front face closer to the camera
-    const z = -(depth / 2.0);
+function scaleColor(color, amount) {
+    return [color[0] * amount, color[1] * amount, color[2] * amount, 1];
+}
+
+// Extrudes a list of 2D triangles into front, back and side faces.
+function extrude2D(vertices2D, depth, baseColor) {
+    const z = depth / 2;
     const positions = [];
     const colors = [];
+    const frontColor = scaleColor(baseColor, 1);
+    const backColor = scaleColor(baseColor, 0.62);
+    const sideColor = scaleColor(baseColor, 0.4);
 
-    // Define different shades of Cyan to fake 3D lighting
-    const colorFront = [0.0, 0.8, 1.0, 1.0]; // Bright Cyan
-    const colorBack  = [0.0, 0.4, 0.6, 1.0]; // Dark Cyan
-    const colorSide  = [0.0, 0.2, 0.4, 1.0]; // Darkest Cyan
-
-    function addColor(colorArray, vertexCount) {
-        for (let j = 0; j < vertexCount; j++) {
-            colors.push(...colorArray);
-        }
+    function addTriangle(vertices, color) {
+        positions.push(...vertices);
+        for (let i = 0; i < 3; i++) colors.push(...color);
     }
 
-    // Loop through the 2D array (2 coordinates per vertex, 3 vertices per triangle = 6 elements)
     for (let i = 0; i < vertices2D.length; i += 6) {
-        const x1 = vertices2D[i],   y1 = vertices2D[i+1];
-        const x2 = vertices2D[i+2], y2 = vertices2D[i+3];
-        const x3 = vertices2D[i+4], y3 = vertices2D[i+5];
+        const x1 = vertices2D[i], y1 = vertices2D[i + 1];
+        const x2 = vertices2D[i + 2], y2 = vertices2D[i + 3];
+        const x3 = vertices2D[i + 4], y3 = vertices2D[i + 5];
 
-        // 1. FRONT FACE (Standard winding: v1, v2, v3)
-        positions.push(x1, y1, z,  x2, y2, z,  x3, y3, z);
-        addColor(colorFront, 3);
+        addTriangle([x1, y1, z, x2, y2, z, x3, y3, z], frontColor);
+        addTriangle([x1, y1, -z, x3, y3, -z, x2, y2, -z], backColor);
 
-        // 2. BACK FACE (Reversed winding: v1, v3, v2)
-        positions.push(x1, y1, -z,  x3, y3, -z,  x2, y2, -z);
-        addColor(colorBack, 3);
-
-        // 3. SIDE WALLS (Connecting front to back for all 3 edges of the triangle)
-        positions.push(
-            x1, y1, z,   x2, y2, z,   x1, y1, -z,
-            x1, y1, -z,  x2, y2, z,   x2, y2, -z,
-
-            x2, y2, z,   x3, y3, z,   x2, y2, -z,
-            x2, y2, -z,  x3, y3, z,   x3, y3, -z,
-            
-            x3, y3, z,   x1, y1, z,   x3, y3, -z,
-            x3, y3, -z,  x1, y1, z,   x1, y1, -z
-        );
-        addColor(colorSide, 18);
+        addTriangle([x1, y1, z, x2, y2, z, x1, y1, -z], sideColor);
+        addTriangle([x1, y1, -z, x2, y2, z, x2, y2, -z], sideColor);
+        addTriangle([x2, y2, z, x3, y3, z, x2, y2, -z], sideColor);
+        addTriangle([x2, y2, -z, x3, y3, z, x3, y3, -z], sideColor);
+        addTriangle([x3, y3, z, x1, y1, z, x3, y3, -z], sideColor);
+        addTriangle([x3, y3, -z, x1, y1, z, x1, y1, -z], sideColor);
     }
-    
+
     return {
         positions: new Float32Array(positions),
         colors: new Float32Array(colors)
     };
+}
+
+// Converts any browser font into a pixel-triangulated 2D mesh; no glyph coordinates are hardcoded.
+function textToTriangles(text, fontSize = 140) {
+    const canvas = document.createElement("canvas");
+    const context = canvas.getContext("2d", { willReadFrequently: true });
+    context.font = `900 ${fontSize}px Arial, sans-serif`;
+    const metrics = context.measureText(text);
+    const padding = 12;
+    canvas.width = Math.ceil(metrics.width) + padding * 2;
+    canvas.height = fontSize + padding * 2;
+    context.font = `900 ${fontSize}px Arial, sans-serif`;
+    context.fillStyle = "#fff";
+    context.textBaseline = "top";
+    context.fillText(text, padding, padding);
+
+    const image = context.getImageData(0, 0, canvas.width, canvas.height);
+    const triangles = [];
+    const scaleX = 2 / canvas.width;
+    const scaleY = 2 / canvas.height;
+    // One quad per block keeps the generated mesh small while retaining the text silhouette.
+    const sampleSize = 4;
+
+    for (let y = 0; y < canvas.height; y += sampleSize) {
+        for (let x = 0; x < canvas.width; x += sampleSize) {
+            if (image.data[(y * canvas.width + x) * 4 + 3] < 128) continue;
+            const rightEdge = Math.min(x + sampleSize, canvas.width);
+            const bottomEdge = Math.min(y + sampleSize, canvas.height);
+            const left = x * scaleX - 1;
+            const right = rightEdge * scaleX - 1;
+            const top = 1 - y * scaleY;
+            const bottom = 1 - bottomEdge * scaleY;
+            triangles.push(left, top, right, top, left, bottom);
+            triangles.push(left, bottom, right, top, right, bottom);
+        }
+    }
+    return new Float32Array(triangles);
 }
