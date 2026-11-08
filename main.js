@@ -236,7 +236,7 @@ function drawScene() {
 
     gl.uniformMatrix4fv(matrixLocation, false, rotationMatrix);
 
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    gl.clearColor(0.192, 0.200, 0.220, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     const vertexCount = geometry3D.positions.length / 3;

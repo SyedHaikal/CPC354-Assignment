@@ -5,12 +5,12 @@ function extrude2D(vertices2D, depth, red, green, blue) {
     let newR = red / 255;
     let newG = green / 255;
     let newB = blue / 255;
-    let RB = newR - 0.4;
-    let GB = newG - 0.4;
-    let BB = newB - 0.4;
-    let RS = newR - 0.6;
-    let GS = newG - 0.6;
-    let BS = newB - 0.6;
+    let RB = newR * 0.4;
+    let GB = newG * 0.4;
+    let BB = newB * 0.4;
+    let RS = newR * 0.6;
+    let GS = newG * 0.6;
+    let BS = newB * 0.6;
 
     //To avoid and handle negative value
     if (RB < 0)
