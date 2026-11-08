@@ -98,21 +98,97 @@ const matrixLocation = gl.getUniformLocation(program, "u_matrix");
 // 7. Enable Depth Testing so front faces hide back faces
 gl.enable(gl.DEPTH_TEST);
 
-// 8. Continuous Animation Loop 
-let currentAngle = 0;
+// 8. Animation loops selected by the user.
+let animationTime = 0;
+let lastFrameTime = performance.now();
+let isPlaying = true;
+let animationDirection = 1;
+let animationSpeed = 1;
+let animationType = "spin";
+
+const playPauseButton = document.getElementById("playPause");
+const resetButton = document.getElementById("reset");
+const animationTypeInput = document.getElementById("animationType");
+const speedInput = document.getElementById("speed");
+const speedValue = document.getElementById("speedValue");
+const directionButton = document.getElementById("direction");
+
+playPauseButton.addEventListener("click", () => {
+    isPlaying = !isPlaying;
+    playPauseButton.textContent = isPlaying ? "Pause" : "Play";
+    lastFrameTime = performance.now();
+});
+
+resetButton.addEventListener("click", () => {
+    animationTime = 0;
+    isPlaying = true;
+    playPauseButton.textContent = "Pause";
+    lastFrameTime = performance.now();
+});
+
+animationTypeInput.addEventListener("change", () => {
+    animationType = animationTypeInput.value;
+    animationTime = 0;
+    lastFrameTime = performance.now();
+});
+
+speedInput.addEventListener("input", () => {
+    animationSpeed = Number(speedInput.value);
+    speedValue.textContent = `${animationSpeed}x`;
+});
+
+directionButton.addEventListener("click", () => {
+    animationDirection *= -1;
+    directionButton.textContent = animationDirection === 1
+        ? "Direction: Right"
+        : "Direction: Left";
+});
 
 function drawScene() {
-    currentAngle += 0.01; 
-    
-    const cos = Math.cos(currentAngle);
-    const sin = Math.sin(currentAngle);
-    
-    // Y-Axis Rotation Matrix
+    const now = performance.now();
+    if (isPlaying) {
+        animationTime += (now - lastFrameTime) * animationSpeed;
+    }
+    lastFrameTime = now;
+
+    const time = animationTime / 1000;
+    const direction = animationDirection;
+    let angle = 0;
+    let scale = 1;
+    let x = 0;
+    let y = 0;
+
+    switch (animationType) {
+        case "rotate":
+            angle = Math.sin(time * 2) * 0.7 * direction;
+            break;
+        case "float":
+            y = Math.sin(time * 2) * 0.22;
+            angle = Math.sin(time * 2) * 0.12 * direction;
+            break;
+        case "orbit":
+            x = Math.cos(time * 1.5) * 0.25;
+            y = Math.sin(time * 1.5) * 0.18;
+            angle = Math.sin(time * 1.5) * 0.3 * direction;
+            break;
+        case "pulse":
+            scale = 1 + Math.sin(time * 2) * 0.12;
+            angle = Math.sin(time * 2) * 0.15 * direction;
+            break;
+        case "spin":
+        default:
+            angle = time * 1.5 * direction;
+            break;
+    }
+
+    const cos = Math.cos(angle) * scale;
+    const sin = Math.sin(angle) * scale;
+
     const rotationMatrix = new Float32Array([
          cos,  0.0,  sin,  0.0,
-         0.0,  1.0,  0.0,  0.0,
+         0.0,  scale, 0.0,  0.0,
         -sin,  0.0,  cos,  0.0,
-         0.0,  0.0,  0.0,  1.0
+         x,    y,     0.0, 1.0
     ]);
 
     gl.uniformMatrix4fv(matrixLocation, false, rotationMatrix);
