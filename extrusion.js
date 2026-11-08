@@ -1,15 +1,53 @@
 // extrusion.js
 
-function extrude2D(vertices2D, depth) {
+function extrude2D(vertices2D, depth, red, green, blue) {
+    //Convert the RGB value with value compatible with this function way of reading colours
+    let newR = red / 255;
+    let newG = green / 255;
+    let newB = blue / 255;
+    let RB = newR - 0.4;
+    let GB = newG - 0.4;
+    let BB = newB - 0.4;
+    let RS = newR - 0.6;
+    let GS = newG - 0.6;
+    let BS = newB - 0.6;
+
+    //To avoid and handle negative value
+    if (RB < 0)
+    {
+        RB = 0.0;
+    }
+    if (GB < 0)
+    {
+        GB = 0.0;
+    }
+    if (BB < 0)
+    {
+        BB = 0.0;
+    }
+    if (RS < 0)
+    {
+        RS = 0.0;
+    }
+    if (GS < 0)
+    {
+        GS = 0.0;
+    }
+    if (BS < 0)
+    {
+        BS = 0.0;
+    }
+
+
     // Negative Z brings the front face closer to the camera
     const z = -(depth / 2.0);
     const positions = [];
     const colors = [];
 
-    // Define different shades of Cyan to fake 3D lighting
-    const colorFront = [0.0, 0.8, 1.0, 1.0]; // Bright Cyan
-    const colorBack  = [0.0, 0.4, 0.6, 1.0]; // Dark Cyan
-    const colorSide  = [0.0, 0.2, 0.4, 1.0]; // Darkest Cyan
+    // Define different shades of colour to imitate 3D lighting
+    const colorFront = [newR, newG, newB, 1.0]; // Bright Cyan
+    const colorBack  = [RB, GB, BB, 1.0]; // Dark Cyan  (Note for offset: (-0.4,-0.4,-0.4,NA))
+    const colorSide  = [RS, GS, BS, 1.0]; // Darkest Cyan (Note for offset: (-0.6,-0.6,-0.6,NA))
 
     function addColor(colorArray, vertexCount) {
         for (let j = 0; j < vertexCount; j++) {

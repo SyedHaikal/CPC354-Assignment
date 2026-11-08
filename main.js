@@ -37,16 +37,59 @@ const vertices = new Float32Array([
     0.95,-0.5, 0.95,-0.35, 0.55,-0.5
 ]);
 
-const geometry3D = extrude2D(vertices, 0.2);
+//Default depth extrusion value
+let depth = 0.2;
+
+//Variable to store colour value
+let colorRed = 0;
+let colorGreen = 204;
+let colorBlue = 255;
+
+//Making the "LAG" TV ident 3D
+let geometry3D = extrude2D(vertices, depth, colorRed, colorGreen, colorBlue);
 
 //Load Position Data directly into the GPU
-const positionBuffer = gl.createBuffer();
+let positionBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, geometry3D.positions, gl.STATIC_DRAW);
 
-const colorBuffer = gl.createBuffer();
+//Load Colour Data directly into the GPU
+let colorBuffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
 gl.bufferData(gl.ARRAY_BUFFER, geometry3D.colors, gl.STATIC_DRAW);
+
+//Slider to let the user change the extrusion depth of the TV ident
+const extDepth = document.getElementById("extDepth");
+extDepth.addEventListener('input', (event) => {
+    depth = parseFloat(event.target.value);
+    //Making the "LAG" TV ident 3D
+    geometry3D = extrude2D(vertices, depth, colorRed, colorGreen, colorBlue);
+
+    //Load Position Data directly into the GPU again so that the extrusion depth change can be applied
+    gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, geometry3D.positions, gl.STATIC_DRAW);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, geometry3D.colors, gl.STATIC_DRAW);
+});
+
+//Colour picker to let the user change the TV ident colour
+const logoCol = document.getElementById("logoCol");
+logoCol.addEventListener('input', (event) => {
+    let colorHex = event.target.value;
+
+    // Convert Hex Colour value to RGB Colour value
+    colorRed = parseInt(colorHex.substring(1, 3), 16);
+    colorGreen = parseInt(colorHex.substring(3, 5), 16);
+    colorBlue = parseInt(colorHex.substring(5, 7), 16);
+
+    //Making the "LAG" TV ident 3D
+    let geometry3D = extrude2D(vertices, depth, colorRed, colorGreen, colorBlue);
+
+    //Load Colour Data directly into the GPU
+    gl.bindBuffer(gl.ARRAY_BUFFER, colorBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, geometry3D.colors, gl.STATIC_DRAW);
+});
 
 //Shaders
 const vsSource = `
