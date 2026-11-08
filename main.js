@@ -151,7 +151,6 @@ let animationType = "spin";
 
 const playPauseButton = document.getElementById("playPause");
 const resetButton = document.getElementById("reset");
-const animationTypeInput = document.getElementById("animationType");
 const speedInput = document.getElementById("speed");
 const speedValue = document.getElementById("speedValue");
 const directionButton = document.getElementById("direction");
@@ -169,22 +168,9 @@ resetButton.addEventListener("click", () => {
     lastFrameTime = performance.now();
 });
 
-animationTypeInput.addEventListener("change", () => {
-    animationType = animationTypeInput.value;
-    animationTime = 0;
-    lastFrameTime = performance.now();
-});
-
 speedInput.addEventListener("input", () => {
     animationSpeed = Number(speedInput.value);
     speedValue.textContent = `${animationSpeed}x`;
-});
-
-directionButton.addEventListener("click", () => {
-    animationDirection *= -1;
-    directionButton.textContent = animationDirection === 1
-        ? "Direction: Right"
-        : "Direction: Left";
 });
 
 function drawScene() {
@@ -194,34 +180,55 @@ function drawScene() {
     }
     lastFrameTime = now;
 
+    //Time in seconds
     const time = animationTime / 1000;
-    const direction = animationDirection;
     let angle = 0;
-    let scale = 1;
+    let scale = 0.5;
     let x = 0;
     let y = 0;
 
-    switch (animationType) {
-        case "rotate":
-            angle = Math.sin(time * 2) * 0.7 * direction;
-            break;
-        case "float":
-            y = Math.sin(time * 2) * 0.22;
-            angle = Math.sin(time * 2) * 0.12 * direction;
-            break;
-        case "orbit":
-            x = Math.cos(time * 1.5) * 0.25;
-            y = Math.sin(time * 1.5) * 0.18;
-            angle = Math.sin(time * 1.5) * 0.3 * direction;
-            break;
-        case "pulse":
-            scale = 1 + Math.sin(time * 2) * 0.12;
-            angle = Math.sin(time * 2) * 0.15 * direction;
-            break;
-        case "spin":
-        default:
-            angle = time * 1.5 * direction;
-            break;
+
+    // Phase 1: Rotate right by 180 degrees
+    if (time <= 2.0)
+    {
+        let animProg = time / 2.0;
+        angle = animProg * Math.PI;
+    }
+
+    // Phase 2: Rotate back to original
+    else if (time <= 4.0)
+    {
+        let animProg = (time - 2.0) / 2.0;
+        angle = Math.PI - (animProg * Math.PI);
+    }
+
+    // Phase 3: Rotate left by 180 degrees
+    else if (time <= 6.0)
+    {
+        let animProg = (time - 4.0) / 2.0;
+        angle = -(animProg * Math.PI);
+    }
+
+    // Phase 4: Rotate back to original
+    else if (time <= 8.0)
+    {
+        let animProg = (time - 6.0) / 2.0;
+        angle = -Math.PI + (animProg * Math.PI);
+    }
+
+    // Phase 5: Gradually enlarge
+    else if (time <= 10.0)
+    {
+        let animProg = (time - 8.0) / 2.0;
+        scale = 0.5 + (animProg * 0.5);
+    }
+
+    // Phase 6: Continuous "move about" loop
+    else
+    {
+        scale = 1.0;
+        y = Math.sin((time - 10.0) * 2.0) * 0.15;
+        angle = Math.sin((time - 10.0) * 1.5) * 0.2;
     }
 
     const cos = Math.cos(angle) * scale;
