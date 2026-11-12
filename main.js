@@ -91,7 +91,7 @@ logoCol.addEventListener('input', (event) => {
     gl.bufferData(gl.ARRAY_BUFFER, geometry3D.colors, gl.STATIC_DRAW);
 });
 
-//Shaders
+//Vertex shader
 const vsSource = `
     attribute vec4 a_position;
     attribute vec4 a_color;
@@ -103,6 +103,7 @@ const vsSource = `
         v_color = a_color; // Pass the color to the fragment shader
     }
 `;
+//Fragment shader
 const fsSource = `
     precision mediump float;
     varying vec4 v_color;
@@ -138,10 +139,10 @@ gl.vertexAttribPointer(colorLocation, 4, gl.FLOAT, false, 0, 0);
 
 const matrixLocation = gl.getUniformLocation(program, "u_matrix");
 
-// 7. Enable Depth Testing so front faces hide back faces
+// Enable Depth Testing so front faces hide back faces
 gl.enable(gl.DEPTH_TEST);
 
-// 8. Animation loops selected by the user.
+// Animation loops selected by the user.
 let animationTime = 0;
 let lastFrameTime = performance.now();
 let isPlaying = true;

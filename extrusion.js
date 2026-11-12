@@ -46,8 +46,8 @@ function extrude2D(vertices2D, depth, red, green, blue) {
 
     // Define different shades of colour to imitate 3D lighting
     const colorFront = [newR, newG, newB, 1.0]; // Bright Cyan
-    const colorBack  = [RB, GB, BB, 1.0]; // Dark Cyan  (Note for offset: (-0.4,-0.4,-0.4,NA))
-    const colorSide  = [RS, GS, BS, 1.0]; // Darkest Cyan (Note for offset: (-0.6,-0.6,-0.6,NA))
+    const colorBack  = [RB, GB, BB, 1.0]; // Dark Cyan  
+    const colorSide  = [RS, GS, BS, 1.0]; // Darkest Cyan 
 
     function addColor(colorArray, vertexCount) {
         for (let j = 0; j < vertexCount; j++) {
@@ -55,21 +55,21 @@ function extrude2D(vertices2D, depth, red, green, blue) {
         }
     }
 
-    // Loop through the 2D array (2 coordinates per vertex, 3 vertices per triangle = 6 elements)
+    // Loop through the 2D array
     for (let i = 0; i < vertices2D.length; i += 6) {
         const x1 = vertices2D[i],   y1 = vertices2D[i+1];
         const x2 = vertices2D[i+2], y2 = vertices2D[i+3];
         const x3 = vertices2D[i+4], y3 = vertices2D[i+5];
 
-        // 1. FRONT FACE (Standard winding: v1, v2, v3)
+        // Front face
         positions.push(x1, y1, z,  x2, y2, z,  x3, y3, z);
         addColor(colorFront, 3);
 
-        // 2. BACK FACE (Reversed winding: v1, v3, v2)
+        // Back face
         positions.push(x1, y1, -z,  x3, y3, -z,  x2, y2, -z);
         addColor(colorBack, 3);
 
-        // 3. SIDE WALLS (Connecting front to back for all 3 edges of the triangle)
+        // Side walls
         positions.push(
             x1, y1, z,   x2, y2, z,   x1, y1, -z,
             x1, y1, -z,  x2, y2, z,   x2, y2, -z,
